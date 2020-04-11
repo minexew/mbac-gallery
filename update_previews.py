@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+from tempfile import NamedTemporaryFile
 import zipfile
 
 from PIL import Image
@@ -15,6 +16,7 @@ from db import DB, PreviewsDB, bad_resource_sha1s
 
 sys.path.insert(0, "tools")
 import fishlabs_obfuscation
+from mbac2obj import MBAC_to_obj
 from render_obj import render_obj
 
 MIN_VERSION = 4
@@ -51,7 +53,7 @@ def stream_hash(f):
     return h.hexdigest()
 
 
-def render_mbac(title, path, mbac, sha1, rel_output_path, is_thumb, resolution):
+def render_mbac(title, path, mbac_data: bytes, sha1, rel_output_path, is_thumb, resolution):
     texture_sha1 = db.find_texture_sha1_for_model(title, path)
 
     if texture_sha1 is not None:
@@ -82,23 +84,28 @@ def render_mbac(title, path, mbac, sha1, rel_output_path, is_thumb, resolution):
         print("UP-TO-DATE", rel_output_path)
         return
 
-    with open("tmp.mbac", "wb") as f:
-        f.write(mbac)
+    with NamedTemporaryFile(delete=False, suffix=".mbac") as mbacfile:
+        mbacfile.write(mbac_data)
 
     print(
         f"RENDER title={title} path={path} {resolution=} {is_thumb=} texture_path={texture_path} {axis_forward=} {axis_up=}"
     )
-    # TODO: just import the function
-    subprocess.check_call(["tools/mbac2obj.py", "tmp.mbac", "vertexdump.obj"])
-    render_obj(
-        "vertexdump.obj",
-        "preview",
-        texture=texture_path,
-        resolution=resolution,
-        axis_forward=axis_forward,
-        axis_up=axis_up,
-    )
-    os.rename("preview0000.png", output_path)
+
+    with NamedTemporaryFile(mode="wt", suffix=".obj", delete=False) as objfile:
+        MBAC_to_obj(f=io.BytesIO(mbac_data), obj=objfile)
+
+    with NamedTemporaryFile() as imagefile:
+        render_obj(
+            objfile.name,
+            imagefile.name,     # blender will add its own suffix, see below
+            texture=texture_path,
+            resolution=resolution,
+            axis_forward=axis_forward,
+            axis_up=axis_up,
+        )
+
+        os.rename(f"{imagefile.name}0000.png", output_path)
+        os.unlink(objfile.name)
 
     previews_db.add_mbac_preview(
         sha1=sha1,
