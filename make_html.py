@@ -71,13 +71,13 @@ with open(args.outputdir / "index.html", "wt") as f:
             f.write(
                 f"""
                 <tr>
-                    <td><img src="data:image/png;base64,{base64.b64encode(jar["icon"]).decode()}"></td>
-                   <td><p>{jar["filename"]}</p><p style="font-size: 10px; opacity: 0.5">{jar["sha1"]}</p></td>
-                   <td>{sizeof_fmt(jar['size'])}</td>
-                   <td>{jar['detected_mascot']}</td>
-                   <td>{jar['detected_m3g']}</td>
-                   <td>{jar['min_timestamp']}<br>{jar['max_timestamp']}</td>
-                   <td>{jar['filetypes']}</td>
+                  <td><img src="data:image/png;base64,{base64.b64encode(jar["icon"]).decode()}"></td>
+                  <td><p>{jar["filename"]}</p><p style="font-size: 10px; opacity: 0.5">{jar["sha1"]}</p></td>
+                  <td>{sizeof_fmt(jar['size'])}</td>
+                  <td>{jar['detected_mascot']}</td>
+                  <td>{jar['detected_m3g']}</td>
+                  <td>{jar['min_timestamp']}<br>{jar['max_timestamp']}</td>
+                  <td>{jar['filetypes']}</td>
                 </tr>
                 """
             )
@@ -101,7 +101,7 @@ with open(args.outputdir / "index.html", "wt") as f:
             if res["width"] and res["height"]:
                 f.write(f'<p style="font-size: 12px">{res["width"]} x {res["height"]}</p>')
             f.write(f'<p style="font-size: 10px; opacity: 0.5">{res["sha1"]}</p>')
-            f.write("</div>")
+            f.write("</div>\n")
 
         f.write("<h2>Models</h2>")
 
@@ -111,7 +111,7 @@ with open(args.outputdir / "index.html", "wt") as f:
                 continue
 
             f.write(f"<h3>{path}</h3>")
-            f.write('<div class="pure-g">')
+            f.write('<div class="pure-g">\n')
 
             for res in filtered:
                 display_cell(f, res)
@@ -120,7 +120,7 @@ with open(args.outputdir / "index.html", "wt") as f:
 
         f.write("<h2>Textures</h2>")
 
-        f.write('<div class="pure-g">')
+        f.write('<div class="pure-g">\n')
 
         for res in db.resources(title_name=title):
             if res["type"] == ".BMP":
@@ -130,7 +130,7 @@ with open(args.outputdir / "index.html", "wt") as f:
 
         f.write("<h2>Images</h2>")
 
-        f.write('<div class="pure-g">')
+        f.write('<div class="pure-g">\n')
 
         for res in db.resources(title_name=title):
             if res["type"] == ".PNG":
