@@ -1,6 +1,7 @@
 # mbac-gallery
-Render a gallery of MBAC models
 
-Thanks to:
+## Special thanks
 
-- Durik256 on GitHub for texture mappings for Stalker
+- [Durik256](https://github.com/Durik256) for texture mappings for Stalker
+- Blender, sqlite
+- https://purecss.io/
