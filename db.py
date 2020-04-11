@@ -5,20 +5,27 @@ from pathlib import Path
 
 from plaintextsqldb import PlaintextSqlDb
 
-bad_resources_csv = '''5e8c3878627f2fee6fbff07b75e30552de1b20d6,fake MBAC in Galaxy on Fire scene release'''
+bad_resources_csv = (
+    """5e8c3878627f2fee6fbff07b75e30552de1b20d6,fake MBAC in Galaxy on Fire scene release"""
+)
 
-bad_resource_sha1s = {hash for hash, comment in
-        [line.split(",") for line in bad_resources_csv.split("\n")]}
+bad_resource_sha1s = {
+    hash for hash, comment in [line.split(",") for line in bad_resources_csv.split("\n")]
+}
 
 games_db = PlaintextSqlDb("analysis/games.sql")
 
+
 def upsert(conn, table, key, kv):
-    query = f"INSERT INTO {table} ({', '.join(kv.keys())}) " +\
-            f"VALUES ({', '.join(['?' for i in range(len(kv))])}) " +\
-            f"ON CONFLICT({key}) DO UPDATE SET {', '.join([f'{key} = excluded.{key}' for key in kv.keys()])}"
+    query = (
+        f"INSERT INTO {table} ({', '.join(kv.keys())}) "
+        f"VALUES ({', '.join(['?' for i in range(len(kv))])}) "
+        f"ON CONFLICT({key}) DO UPDATE SET {', '.join([f'{key} = excluded.{key}' for key in kv.keys()])}"
+    )
     # print(query)
     c = conn.cursor()
     c.execute(query, tuple(kv.values()))
+
 
 class DB:
     def __init__(self, path):
@@ -27,14 +34,17 @@ class DB:
 
         c = self.conn.cursor()
 
-        c.execute('''
+        c.execute(
+            """
             CREATE TABLE IF NOT EXISTS title (
                     id INTEGER PRIMARY KEY,
                     name TEXT UNIQUE
                     )
-            ''')
+            """
+        )
 
-        c.execute('''
+        c.execute(
+            """
             CREATE TABLE IF NOT EXISTS jar (
                     sha1 TEXT PRIMARY KEY,
                     title_id INT,
@@ -50,9 +60,11 @@ class DB:
                     filetypes TEXT,
                     icon BLOB
                     )
-            ''')
+            """
+        )
 
-        c.execute('''
+        c.execute(
+            """
             CREATE TABLE IF NOT EXISTS resource (
                     sha1 TEXT PRIMARY KEY,
                     filename TEXT,
@@ -61,15 +73,18 @@ class DB:
                     width INTEGER,
                     height INTEGER
                     )
-            ''')
+            """
+        )
 
-        c.execute('''
+        c.execute(
+            """
             CREATE TABLE IF NOT EXISTS jar_resource (
                     jar_sha1 TEXT NOT NULL,
                     resource_sha1 TEXT NOT NULL,
                     PRIMARY KEY (jar_sha1, resource_sha1)
                     )
-            ''')
+            """
+        )
 
         self.conn.commit()
 
@@ -81,7 +96,12 @@ class DB:
         del kwargs["jar_sha1"]
 
         upsert(self.conn, "resource", "sha1", kwargs)
-        upsert(self.conn, "jar_resource", "jar_sha1, resource_sha1", dict(jar_sha1=jar_sha1, resource_sha1=kwargs["sha1"]))
+        upsert(
+            self.conn,
+            "jar_resource",
+            "jar_sha1, resource_sha1",
+            dict(jar_sha1=jar_sha1, resource_sha1=kwargs["sha1"]),
+        )
 
     def close(self):
         self.conn.commit()
@@ -95,29 +115,37 @@ class DB:
 
     def find_default_model_orientation_for_title(self, title):
         c = games_db.conn.cursor()
-        c.execute("SELECT model_axis_forward, model_axis_up FROM title WHERE title.name = ?", (title,))
+        c.execute(
+            "SELECT model_axis_forward, model_axis_up FROM title WHERE title.name = ?", (title,)
+        )
         row = c.fetchone()
 
         return row if row is not None else (None, None)
 
     def find_texture_sha1_for_model(self, title, model_path):
         c = games_db.conn.cursor()
-        c.execute("SELECT texture_path FROM model_texture WHERE title_name = ? AND model_path = ?", (title, model_path))
+        c.execute(
+            "SELECT texture_path FROM model_texture WHERE title_name = ? AND model_path = ?",
+            (title, model_path),
+        )
         row = c.fetchone()
 
         if row is None:
             return None
 
-        texture_path, = row
+        (texture_path,) = row
 
         c = self.conn.cursor()
         c.execute("SELECT sha1 FROM resource WHERE filename = ?", (texture_path,))
-        (sha1,), = c.fetchall()
+        ((sha1,),) = c.fetchall()
         return sha1
 
     def jars(self, title_name):
         c = self.conn.cursor()
-        c.execute("SELECT jar.* FROM title LEFT JOIN jar on jar.title_id = title.id WHERE title.name = ?", (title_name,))
+        c.execute(
+            "SELECT jar.* FROM title LEFT JOIN jar on jar.title_id = title.id WHERE title.name = ?",
+            (title_name,),
+        )
         return c.fetchall()
 
     def titles(self):
@@ -127,12 +155,16 @@ class DB:
 
     def resources(self, title_name):
         c = self.conn.cursor()
-        c.execute("SELECT DISTINCT resource.* FROM title LEFT JOIN jar ON jar.title_id = title.id " +
-                  "LEFT JOIN jar_resource ON jar_resource.jar_sha1 = jar.sha1 " +
-                  "LEFT JOIN resource ON resource.sha1 = jar_resource.resource_sha1 " +
-                  "WHERE title.name = ? " +
-                  "ORDER BY resource.filename ASC", (title_name,))
+        c.execute(
+            "SELECT DISTINCT resource.* FROM title LEFT JOIN jar ON jar.title_id = title.id "
+            "LEFT JOIN jar_resource ON jar_resource.jar_sha1 = jar.sha1 "
+            "LEFT JOIN resource ON resource.sha1 = jar_resource.resource_sha1 "
+            "WHERE title.name = ? "
+            "ORDER BY resource.filename ASC",
+            (title_name,),
+        )
         return c.fetchall()
+
 
 class PreviewsDB:
     def __init__(self, path):
@@ -141,7 +173,8 @@ class PreviewsDB:
 
         c = self.conn.cursor()
 
-        c.execute('''
+        c.execute(
+            """
             CREATE TABLE IF NOT EXISTS mbac_preview (
                     sha1 TEXT NOT NULL,
                     filename TEXT,
@@ -154,7 +187,8 @@ class PreviewsDB:
                     axis_up TEXT NOT NULL,
                     PRIMARY KEY (sha1, thumb)
                     )
-            ''')
+            """
+        )
 
         try:
             c.execute("ALTER TABLE mbac_preview ADD COLUMN axis_forward INT DEFAULT '-Z'")

@@ -18,7 +18,7 @@ class PlaintextSqlDb:
     def close(self):
         # TODO: can detect unsaved changes and only write in that case?
 
-        #self.dump_to(self.path + ".new")
+        # self.dump_to(self.path + ".new")
 
         self.conn.close()
 
@@ -40,6 +40,7 @@ def plaintext_sql_db(*args, **kwds):
 
 if __name__ == "__main__":
     import sys
+
     from_, path = sys.argv[1:3]
 
     conn = sqlite3.connect(from_)

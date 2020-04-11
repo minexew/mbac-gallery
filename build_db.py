@@ -20,17 +20,18 @@ import fishlabs_obfuscation
 from render_obj import render_obj
 
 parser = argparse.ArgumentParser()
-parser.add_argument('db', type=Path)
-parser.add_argument('jars', nargs='+', type=Path)
+parser.add_argument("db", type=Path)
+parser.add_argument("jars", nargs="+", type=Path)
 args = parser.parse_args()
 
 db = DB(args.db)
 
+
 def file_hash(path):
     h = hashlib.sha1()
 
-    with open(path, 'rb', buffering=0) as f:
-        for b in iter(lambda : f.read(128*1024), b''):
+    with open(path, "rb", buffering=0) as f:
+        for b in iter(lambda: f.read(128 * 1024), b""):
             h.update(b)
 
     return h.hexdigest()
@@ -39,7 +40,7 @@ def file_hash(path):
 def stream_hash(f):
     h = hashlib.sha1()
 
-    for b in iter(lambda : f.read(128*1024), b''):
+    for b in iter(lambda: f.read(128 * 1024), b""):
         h.update(b)
 
     return h.hexdigest()
@@ -49,37 +50,40 @@ def read_manifest(z):
     manifest = {}
 
     try:
-        with z.open('META-INF/MANIFEST.MF', 'r') as manifest_file:
+        with z.open("META-INF/MANIFEST.MF", "r") as manifest_file:
             for line in manifest_file:
-                line = line.decode('utf-8', 'replace').strip()
-                if not line: continue
+                line = line.decode("utf-8", "replace").strip()
+                if not line:
+                    continue
                 try:
-                    delim = line.index(':')
+                    delim = line.index(":")
                 except Exception:
                     continue
-                [key, value] = line[:delim], line[delim+1:]
+                [key, value] = line[:delim], line[delim + 1 :]
                 manifest[key.strip()] = value.strip()
     except KeyError:
-        with z.open('META-INF/manifest.mf', 'r') as manifest_file:
+        with z.open("META-INF/manifest.mf", "r") as manifest_file:
             for line in manifest_file:
                 line = line.decode().strip()
-                if not line: continue
+                if not line:
+                    continue
                 try:
-                    delim = line.index(':')
+                    delim = line.index(":")
                 except Exception:
                     continue
-                [key, value] = line[:delim], line[delim+1:]
+                [key, value] = line[:delim], line[delim + 1 :]
                 manifest[key.strip()] = value.strip()
 
     return manifest
 
+
 all_bins = []
 
 for path in args.jars:
-    print('scan', path, file=sys.stderr)
+    print("scan", path, file=sys.stderr)
 
     title = Path(path).parts[-2]
-    if title == 'Other':
+    if title == "Other":
         continue
 
     size = os.stat(path).st_size
@@ -87,9 +91,9 @@ for path in args.jars:
 
     resource_exts = {".BMP", ".MBAC", ".PNG"}
 
-    with zipfile.ZipFile(path, mode='r') as z:
+    with zipfile.ZipFile(path, mode="r") as z:
         manifest = read_manifest(z)
-        assert 'MIDlet-Name' in manifest
+        assert "MIDlet-Name" in manifest
 
         contents_size = 0
         h = hashlib.sha1()
@@ -118,22 +122,22 @@ for path in args.jars:
             if max_timestamp is None or timestamp < max_timestamp:
                 max_timestamp = timestamp
 
-            if 'MANIFEST.MF' not in info.filename.upper():
+            if "MANIFEST.MF" not in info.filename.upper():
                 contents_size += info.file_size
 
-                with z.open(info.filename, 'r') as f:
-                    for b in iter(lambda : f.read(128*1024), b''):
+                with z.open(info.filename, "r") as f:
+                    for b in iter(lambda: f.read(128 * 1024), b""):
                         h.update(b)
 
-            if ext == '.M3G':
+            if ext == ".M3G":
                 detected_m3g += 1
-                flags.add('M3G')
-            elif ext == '.MBAC':
+                flags.add("M3G")
+            elif ext == ".MBAC":
                 detected_mascot += 1
-                flags.add('MASCOT')
+                flags.add("MASCOT")
 
-            if not obfuscation and (ext == '.BMP' or ext == '.MBAC'):
-                with z.open(info.filename, 'r') as f:
+            if not obfuscation and (ext == ".BMP" or ext == ".MBAC"):
+                with z.open(info.filename, "r") as f:
                     all_data = f.read()
 
                     detect = fishlabs_obfuscation.is_obfuscated(ext, all_data)
@@ -142,7 +146,7 @@ for path in args.jars:
 
             width, height = None, None
 
-            with z.open(info.filename, 'r') as f:
+            with z.open(info.filename, "r") as f:
                 try:
                     data = fishlabs_obfuscation.normalize(f.read(), ext)
                     img = Image.open(io.BytesIO(data))
@@ -156,15 +160,22 @@ for path in args.jars:
                 except IOError:
                     pass
                 except Image.DecompressionBombError:
-                    print(info.filename, ': PIL.Image.DecompressionBombError', file=sys.stderr)
+                    print(info.filename, ": PIL.Image.DecompressionBombError", file=sys.stderr)
 
             if ext in resource_exts:
-                with z.open(info.filename, 'r') as f:
+                with z.open(info.filename, "r") as f:
                     sha1 = stream_hash(f)
 
                 if sha1 not in bad_resource_sha1s:
-                    db.add_resource(jar_sha1=jar_hash, sha1=sha1, filename=info.filename, size=info.file_size,
-                            type=ext, width=width, height=height)
+                    db.add_resource(
+                        jar_sha1=jar_hash,
+                        sha1=sha1,
+                        filename=info.filename,
+                        size=info.file_size,
+                        type=ext,
+                        width=width,
+                        height=height,
+                    )
 
         # retrieve MIDlet icon
         icon_path = manifest["MIDlet-1"].split(",")[1].strip()
@@ -177,17 +188,22 @@ for path in args.jars:
         num_files = len(z.infolist())
 
     name = Path(path).parts[-1]
-    note = ''
-    filetypes = ' '.join(sorted(list(all_exts)))
+    filetypes = " ".join(sorted(list(all_exts)))
 
-    db.add_jar(title_id=db.get_title_id(title), filename=name, size=size, sha1=jar_hash,
-            detected_fishlabs_obfuscation=obfuscation,
-            detected_mascot=detected_mascot,
-            detected_m3g=detected_m3g,
-            filetypes=filetypes,
-            widest_image=str(widest_image), tallest_image=str(tallest_image),
-            min_timestamp=min_timestamp, max_timestamp=max_timestamp,
-            icon=icon_data
-            )
+    db.add_jar(
+        title_id=db.get_title_id(title),
+        filename=name,
+        size=size,
+        sha1=jar_hash,
+        detected_fishlabs_obfuscation=obfuscation,
+        detected_mascot=detected_mascot,
+        detected_m3g=detected_m3g,
+        filetypes=filetypes,
+        widest_image=str(widest_image),
+        tallest_image=str(tallest_image),
+        min_timestamp=min_timestamp,
+        max_timestamp=max_timestamp,
+        icon=icon_data,
+    )
 
 db.close()
