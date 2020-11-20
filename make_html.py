@@ -27,7 +27,9 @@ thumbs_dir = args.outputdir / "thumbs"
 # TODO: should obviously use Jinja or something
 with open(args.outputdir / "index.html", "wt") as f:
     f.write(
-        '<link rel="stylesheet" href="https://unpkg.com/purecss@1.0.1/build/pure-min.css" integrity="sha384-oAOxQR6DkCoMliIh8yFnu25d7Eq/PHS21PClpwjOTeU2jRSq11vu66rf90/cZr47" crossorigin="anonymous">'
+        '<link rel="stylesheet" href="https://unpkg.com/purecss@1.0.1/build/pure-min.css" '
+        'integrity="sha384-oAOxQR6DkCoMliIh8yFnu25d7Eq/PHS21PClpwjOTeU2jRSq11vu66rf90/cZr47" '
+        'crossorigin="anonymous">\n'
     )
 
     # https://stackoverflow.com/a/1094933
@@ -39,7 +41,7 @@ with open(args.outputdir / "index.html", "wt") as f:
         return "%.1f%s%s" % (num, "Yi", suffix)
 
     for title in db.titles():
-        f.write(f"<h1><a href='{title + '.html'}'>{title}</a></h1>")
+        f.write(f"<h1><a href='{title + '.html'}'>{title}</a></h1>\n")
 
         f1 = f
         f = open(args.outputdir / (title + ".html"), "wt")
@@ -49,13 +51,16 @@ with open(args.outputdir / "index.html", "wt") as f:
 
         for res in db.resources(title_name=title):
             p = Path(res["filename"])
+
             try:
                 resources_by_path[p.parent].append(res)
             except KeyError:
                 resources_by_path[p.parent] = [res]
 
         f.write(
-            '<link rel="stylesheet" href="https://unpkg.com/purecss@1.0.1/build/pure-min.css" integrity="sha384-oAOxQR6DkCoMliIh8yFnu25d7Eq/PHS21PClpwjOTeU2jRSq11vu66rf90/cZr47" crossorigin="anonymous">'
+            '<link rel="stylesheet" href="https://unpkg.com/purecss@1.0.1/build/pure-min.css" '
+            'integrity="sha384-oAOxQR6DkCoMliIh8yFnu25d7Eq/PHS21PClpwjOTeU2jRSq11vu66rf90/cZr47" '
+            'crossorigin="anonymous">'
         )
 
         f.write(f"<h1>{title}</h1>")

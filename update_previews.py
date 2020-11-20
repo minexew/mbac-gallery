@@ -109,6 +109,7 @@ def render_mbac(title, path, mbac_data: bytes, sha1, jar_sha1, rel_output_path, 
             objfile.name,
             imagefile.name,     # blender will add its own suffix, see below
             texture=texture_path,
+            texture_interpolation="Closest",
             resolution=resolution,
             axis_forward=axis_forward,
             axis_up=axis_up,
