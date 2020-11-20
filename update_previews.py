@@ -44,6 +44,16 @@ db = DB(args.db)
 previews_db = PreviewsDB(workdir / "previews.sqlite")
 
 
+def file_hash(path):
+    h = hashlib.sha1()
+
+    with open(path, "rb", buffering=0) as f:
+        for b in iter(lambda: f.read(128 * 1024), b""):
+            h.update(b)
+
+    return h.hexdigest()
+
+
 def stream_hash(f):
     h = hashlib.sha1()
 
@@ -53,8 +63,8 @@ def stream_hash(f):
     return h.hexdigest()
 
 
-def render_mbac(title, path, mbac_data: bytes, sha1, rel_output_path, is_thumb, resolution):
-    texture_sha1 = db.find_texture_sha1_for_model(title, path)
+def render_mbac(title, path, mbac_data: bytes, sha1, jar_sha1, rel_output_path, is_thumb, resolution):
+    texture_sha1 = db.find_texture_sha1_for_model(title, jar_sha1, path)
 
     if texture_sha1 is not None:
         # TODO: eventually db.find_texture_filename_for_model after previewsDB populated
@@ -149,6 +159,7 @@ for path in args.jars:
 
 for path in args.jars:
     title = path.parent.name
+    jar_hash = file_hash(path)
 
     with zipfile.ZipFile(path, mode="r") as z:
         for info in z.infolist():
@@ -170,6 +181,7 @@ for path in args.jars:
                         info.filename,
                         mbac,
                         sha1,
+                        jar_hash,
                         rel_thumbs_dir / (sha1 + ".png"),
                         is_thumb=True,
                         resolution=(256, 144),
@@ -179,6 +191,7 @@ for path in args.jars:
 
 for path in args.jars:
     title = path.parent.name
+    jar_hash = file_hash(path)
 
     with zipfile.ZipFile(path, mode="r") as z:
         for info in z.infolist():
@@ -200,6 +213,7 @@ for path in args.jars:
                         info.filename,
                         mbac,
                         sha1,
+                        jar_hash,
                         rel_full_dir / (sha1 + ".png"),
                         is_thumb=False,
                         resolution=(1280, 720),

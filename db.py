@@ -67,7 +67,6 @@ class DB:
             """
             CREATE TABLE IF NOT EXISTS resource (
                     sha1 TEXT PRIMARY KEY,
-                    filename TEXT,
                     size INTEGER,
                     type TEXT,
                     width INTEGER,
@@ -81,7 +80,8 @@ class DB:
             CREATE TABLE IF NOT EXISTS jar_resource (
                     jar_sha1 TEXT NOT NULL,
                     resource_sha1 TEXT NOT NULL,
-                    PRIMARY KEY (jar_sha1, resource_sha1)
+                    filename TEXT,
+                    PRIMARY KEY (jar_sha1, filename)
                     )
             """
         )
@@ -91,16 +91,13 @@ class DB:
     def add_jar(self, **kwargs):
         upsert(self.conn, "jar", "sha1", kwargs)
 
-    def add_resource(self, **kwargs):
-        jar_sha1 = kwargs["jar_sha1"]
-        del kwargs["jar_sha1"]
-
+    def add_resource(self, jar_sha1, filename, **kwargs):
         upsert(self.conn, "resource", "sha1", kwargs)
         upsert(
             self.conn,
             "jar_resource",
-            "jar_sha1, resource_sha1",
-            dict(jar_sha1=jar_sha1, resource_sha1=kwargs["sha1"]),
+            "jar_sha1, filename",
+            dict(jar_sha1=jar_sha1, resource_sha1=kwargs["sha1"], filename=filename),
         )
 
     def close(self):
@@ -122,7 +119,7 @@ class DB:
 
         return row if row is not None else (None, None)
 
-    def find_texture_sha1_for_model(self, title, model_path):
+    def find_texture_sha1_for_model(self, title, jar_sha1, model_path):
         c = games_db.conn.cursor()
         c.execute(
             "SELECT texture_path FROM model_texture WHERE title_name = ? AND model_path = ?",
@@ -136,7 +133,7 @@ class DB:
         (texture_path,) = row
 
         c = self.conn.cursor()
-        c.execute("SELECT sha1 FROM resource WHERE filename = ?", (texture_path,))
+        c.execute("SELECT resource_sha1 FROM jar_resource WHERE jar_sha1 = ? AND filename = ?", (jar_sha1, texture_path))
         ((sha1,),) = c.fetchall()
         return sha1
 
@@ -156,11 +153,11 @@ class DB:
     def resources(self, title_name):
         c = self.conn.cursor()
         c.execute(
-            "SELECT DISTINCT resource.* FROM title LEFT JOIN jar ON jar.title_id = title.id "
+            "SELECT DISTINCT jar_resource.filename, resource.* FROM title LEFT JOIN jar ON jar.title_id = title.id "
             "LEFT JOIN jar_resource ON jar_resource.jar_sha1 = jar.sha1 "
             "LEFT JOIN resource ON resource.sha1 = jar_resource.resource_sha1 "
             "WHERE title.name = ? "
-            "ORDER BY resource.filename ASC",
+            "ORDER BY jar_resource.filename ASC",
             (title_name,),
         )
         return c.fetchall()
