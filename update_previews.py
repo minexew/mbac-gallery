@@ -19,10 +19,11 @@ import fishlabs_obfuscation
 from mbac2obj import MBAC_to_obj
 from render_obj import render_obj
 
-MIN_VERSION = 4
-VERSION = 5
+MIN_VERSION = 6
+VERSION = 6
 
 # v5: add model orientation information in DB
+# v6: nearest-neighbor texture interpolation, no specular highlights
 
 parser = argparse.ArgumentParser()
 parser.add_argument("db")
