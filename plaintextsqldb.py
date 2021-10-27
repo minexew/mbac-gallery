@@ -6,11 +6,7 @@ class PlaintextSqlDb:
     def __init__(self, path, **sqlite_kwargs):
         self.path = path
 
-        try:
-            with open(self.path, "rt") as f:
-                sql = f.read()
-        except FileNotFoundError:
-            sql = ""
+        sql = self.path.read_text()
 
         self.conn = sqlite3.connect(":memory:", **sqlite_kwargs)
         self.conn.executescript(sql)

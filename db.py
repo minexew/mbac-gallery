@@ -13,7 +13,7 @@ bad_resource_sha1s = {
     hash for hash, comment in [line.split(",") for line in bad_resources_csv.split("\n")]
 }
 
-games_db = PlaintextSqlDb("analysis/games.sql")
+games_db = PlaintextSqlDb(Path(__file__).parent / "games.sql")
 
 
 def upsert(conn, table, key, kv):
