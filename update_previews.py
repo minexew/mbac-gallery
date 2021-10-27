@@ -5,6 +5,7 @@ import hashlib
 import io
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 from tempfile import NamedTemporaryFile
@@ -116,7 +117,7 @@ def render_mbac(title, path, mbac_data: bytes, sha1, jar_sha1, rel_output_path, 
             axis_up=axis_up,
         )
 
-        os.rename(f"{imagefile.name}0000.png", output_path)
+        shutil.move(f"{imagefile.name}0000.png", output_path)
         os.unlink(objfile.name)
 
     previews_db.add_mbac_preview(
