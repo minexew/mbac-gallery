@@ -92,14 +92,13 @@ with open(args.outputdir / "index.html", "wt") as f:
         def display_cell(f, res):
             f.write('<div class="pure-u-1-6" style="text-align: center">')
 
-            full = (full_dir / f'{res["sha1"]}.png').is_file()
+            if not (full_dir / f'{res["sha1"]}.png').is_file():
+                print("warning: no such file", str(full_dir / f'{res["sha1"]}.png'))
             # thumb = (thumbs_dir / f'{res["sha1"]}.png').is_file()
 
-            if full:
-                f.write(f'<a href="full/{res["sha1"]}.png">')
+            f.write(f'<a href="full/{res["sha1"]}.png">')
             f.write(f'<img src="thumbs/{res["sha1"]}.png">')
-            if full:
-                f.write("</a>")
+            f.write("</a>")
 
             p = Path(res["filename"])
             f.write(f'<p style="font-size: 12px">{p.name}</p>')
